@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{title}}</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="kekStyle.css" type="text/css">
+</head>
+
+<body>
+    {{!-- nav bar with filters --}}
+    {{>filter}}
+    <div class="addTaskForm">
+        <form name="addTaskForm">
+            <label>Тема</label></br>
+            <input type="text" name="taskName" /></br>
+            <label>Ожидаемое время завершения</label></br>
+            <input type="datetime-local" name="completionTime" /></br></br>
+            <button type="submit" id="submitButton">ДОБАВИТЬ</button>
+        </form>
+    </div>
+
+    
+    <div class="task">
+        <h3>{{_taskName}}</h3>
+        <p>{{_completionTime}}</p>
+        <p>{{_status}}</p>
+    </div>
+    <script src="js/code.js"></script>
+</body>
+
+</html>
