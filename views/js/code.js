@@ -7,13 +7,14 @@ document.getElementById("submitButton").addEventListener("click", function (e) {
     // сериализуем данные в json
     let task = JSON.stringify({
         taskName: taskName,
-        completionTime: completionTime
+        completionTime: completionTime,
+        status: 0
     });
     let request = new XMLHttpRequest();
-    
+
     request.open("POST", "/lab1", true);
     request.setRequestHeader("Content-Type", "application/json");
     //request.addEventListener("load",  (request, response) => {});
     request.send(task);
-    
+
 });
