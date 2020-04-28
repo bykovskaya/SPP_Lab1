@@ -37,12 +37,18 @@ function getNormalDate(argDate) {
 }
 
 /*generates html for tasks*/
+
+const divDone = "<div class=\"task\" style=\"background-color:lightblue\">";
+const divInProc = "<div class=\"task\" style=\"background-color:lightcoral\">";
 hbs.registerHelper("createTaskList", (tasks) => {
     let list = "";
-
+    let divStyle = "";
     for (let i = 0; i < tasks.length; i++) {
-
-        list += "<div class=\"task\">" +
+        if (tasks[i].status == "in process")
+            divStyle = divInProc;
+        else
+            divStyle = divDone;
+        list += divStyle +
             "<h3>" + tasks[i].taskName + "</h3>" +
             "<p>" + getNormalDate(tasks[i].completionDate) + "</p>" +
             "<p>" + tasks[i].completionTime + "</p>" +
@@ -57,16 +63,31 @@ app.use(express.static(path.join(__dirname + "/js")));
 /*******************************/
 
 let task = new Array();
+let status = "all";
+const sqlSelectRequestWhere = "SELECT taskName, completionTime, completionDate, status FROM tasks WHERE status = ?";
+const sqlSelectRequest = "SELECT taskName, completionTime, completionDate, status FROM tasks";
+
+app.use("/sts", (request, response) => {
+    status = request.query.status;
+    response.redirect("/lab1");
+});
 
 app.get("/lab1", (request, response) => {
-    DBconnection.query("SELECT taskName, completionTime, completionDate, status FROM tasks", (err, results) => {
-        console.error("Error(DB):" + err);
-        task = results;
+    if (status == "all")
+    DBconnection.query(sqlSelectRequest, (err, results) => {
+        if (err) console.error("Error(DB):" + err);
+        else task = results;
+        response.render("main", { task });
+    });
+    else
+    DBconnection.query(sqlSelectRequestWhere, status, (err, results) => {
+        if (err) console.error("Error(DB):" + err);
+        else task = results;
         response.render("main", { task });
     });
 });
 
-let sqlInsertRequest = "INSERT INTO tasks(taskName, completionDate, completionTime) VALUES(?, ?, ?)";
+const sqlInsertRequest = "INSERT INTO tasks(taskName, completionDate, completionTime) VALUES(?, ?, ?)";
 app.post("/lab1", JSONparser, (request, response) => {
     let arg = [request.body.taskName,
     request.body.completionDate,
@@ -75,7 +96,6 @@ app.post("/lab1", JSONparser, (request, response) => {
     DBconnection.query(sqlInsertRequest, arg, (err, results) => {
         if (err) console.error("Error: ", err.message);
         else console.log("Data added!");
-
     });
 });
 

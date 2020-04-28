@@ -15,9 +15,25 @@ document.getElementById("submitButton").addEventListener("click", function (e) {
 
     request.open("POST", "/lab1", true);
     request.setRequestHeader("Content-Type", "application/json");
-    request.addEventListener("load",  (request, response) => {
-        //apply style to div
-    });
+
     request.send(task);
 
+});
+
+const statusSelectField = document.getElementById("status");
+statusSelectField.addEventListener("change", (e) => {
+    let selectedStatus = statusSelectField.value;
+
+    let request = new XMLHttpRequest();
+    function reqReadyStateChange() {
+        if (request.readyState == 4) {
+            var status = request.status;
+            if (status == 200) {
+                location.reload();
+            }
+        }
+    }
+    request.open("get", "/sts?status=" + selectedStatus, true);
+    request.onreadystatechange = reqReadyStateChange;
+    request.send();
 });
