@@ -11,17 +11,18 @@
     {{!-- nav bar with filters --}}
     {{>filter}}
     <div class="addTaskForm">
-        <form name="addTaskForm">
+        <form name="addTaskForm" >
             <label>Тема</label></br>
             <input type="text" name="taskName" /></br>
             <label>Ожидаемые дата и время завершения</label></br>
-            <input type="date" name="completionDate" />
-            <input type="time" name="completionTime" /></br></br>
+            <input type="datetime-local" name="completionTime" /></br></br>
+            <input type="file" id="uploadingFile" name="uploadingFile"/>
+            <p>{{warning}}</p>
             <button type="submit" id="submitButton">ДОБАВИТЬ</button>
         </form>
     </div>
-    <h1>{{byStatus}}</h1>
-    <div>{{createTaskList task}}</div>
+    
+    <div class="tasks-container">{{createTaskList task}}</div>
     {{!-- <div class="task">
         <h3>{{_taskName}}</h3>
         <p>{{_completionTime}}</p>

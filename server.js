@@ -1,8 +1,8 @@
 const express = require("express");
 var path = require('path');
 const hbs = require("hbs");
-const JSONparser = express.json();
 const app = express();
+
 app.set("view engine", "hbs");
 hbs.registerPartials(__dirname + "/views/partials");
 
@@ -32,26 +32,96 @@ function getNormalDate(argDate) {
     let date = new Date(argDate);
 
     return normalDate = (date.getDate() < 10 ? "0" + date.getDate() : date.getDate()) +
-        "." + (date.getMonth() < 10 ? "0" + date.getMonth() : date.getMonth()) +
+        "." + (date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : (date.getMonth() + 1)) +
         "." + date.getFullYear();
 }
 
-/*generates html for tasks*/
+function getNormalTime(argTime) {
+    let normalTime = "";
+    let date = new Date(argTime);
 
+    return normalTime = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) +
+        ":" + (date.getMinutes() + 1 < 10 ? "0" + date.getMinutes() : date.getMinutes());
+}
+
+function ru_status(status) {
+    switch (status) {
+        case "all":
+            return "все";
+            break;
+        case "in process":
+            return "в процессе";
+            break;
+        case "done":
+            return "выполненные";
+            break;
+    }
+};
+
+function ru_paramValue(val) {
+    switch (val) {
+        case "byTname":
+            return "названию";
+            break;
+        case "byComplTime":
+            return "времени завершения";
+            break;
+    }
+}
+
+function fSort(tasks, sortParam) {
+    switch (sortParam) {
+        case "byAddTime":
+            tasks.sort((task1, task2) => {
+                if (task1.taskName > task2.taskName)
+                    return 1;
+                if (task1.taskName < task2.taskName)
+                    return -1;
+                if (task1.taskName == task2.taskName)
+                    return 0;
+            });
+            break;
+        case "byTname":
+            tasks.sort((task1, task2) => {
+                if (task1.taskName > task2.taskName)
+                    return 1;
+                if (task1.taskName < task2.taskName)
+                    return -1;
+                if (task1.taskName == task2.taskName)
+                    return 0;
+            });
+            break;
+
+        case "byComplTime":
+            tasks.sort((task1, task2) => {
+                if (task1.completionTime > task2.completionTime)
+                    return 1;
+                if (task1.completionTime < task2.completionTime)
+                    return -1;
+                if (task1.completionTime == task2.completionTime)
+                    return 0;
+            });
+            break;
+    }
+}
+
+/*generates html for tasks*/
+let color = "";
 const divDone = "<div class=\"task\" style=\"background-color:lightblue\">";
-const divInProc = "<div class=\"task\" style=\"background-color:lightcoral\">";
+const divInProc = "<div class=\"task\" style=\"background-color:coral\">";
 hbs.registerHelper("createTaskList", (tasks) => {
     let list = "";
-    let divStyle = "";
+    let div = "";
+    let time = new Date();
+    fSort(tasks, parametrValue);
     for (let i = 0; i < tasks.length; i++) {
         if (tasks[i].status == "in process")
-            divStyle = divInProc;
+            div = divInProc;
         else
-            divStyle = divDone;
-        list += divStyle +
-            "<h3>" + tasks[i].taskName + "</h3>" +
-            "<p>" + getNormalDate(tasks[i].completionDate) + "</p>" +
-            "<p>" + tasks[i].completionTime + "</p>" +
+            div = divDone;
+        list += div + "<h3>" + tasks[i].taskName + "</h3>" +
+            "<p>" + getNormalDate(tasks[i].completionTime) + "</p>" +
+            "<p>" + getNormalTime(tasks[i].completionTime) + "</p>" +
             "</div>"
     }
     return new hbs.SafeString(list);
@@ -64,39 +134,83 @@ app.use(express.static(path.join(__dirname + "/js")));
 
 let task = new Array();
 let status = "all";
-const sqlSelectRequestWhere = "SELECT taskName, completionTime, completionDate, status FROM tasks WHERE status = ?";
-const sqlSelectRequest = "SELECT taskName, completionTime, completionDate, status FROM tasks";
+let parametrValue = "byTname";
+const sqlSelectRequestWhere = "SELECT taskName, completionTime, status FROM tasks WHERE status = ?";
+const sqlSelectRequest = "SELECT taskName, completionTime, status FROM tasks";
 
 app.use("/sts", (request, response) => {
     status = request.query.status;
     response.redirect("/lab1");
 });
 
-app.get("/lab1", (request, response) => {
-    if (status == "all")
-    DBconnection.query(sqlSelectRequest, (err, results) => {
-        if (err) console.error("Error(DB):" + err);
-        else task = results;
-        response.render("main", { task });
-    });
-    else
-    DBconnection.query(sqlSelectRequestWhere, status, (err, results) => {
-        if (err) console.error("Error(DB):" + err);
-        else task = results;
-        response.render("main", { task });
-    });
+app.use("/sort", (request, response) => {
+    parametrValue = request.query.param;
+    response.redirect("/lab1");
 });
 
-const sqlInsertRequest = "INSERT INTO tasks(taskName, completionDate, completionTime) VALUES(?, ?, ?)";
-app.post("/lab1", JSONparser, (request, response) => {
-    let arg = [request.body.taskName,
-    request.body.completionDate,
-    request.body.completionTime];
-    // console.log(`${request.body.taskName}(${request.body.completionTime})`);
-    DBconnection.query(sqlInsertRequest, arg, (err, results) => {
-        if (err) console.error("Error: ", err.message);
-        else console.log("Data added!");
-    });
+
+let warningMess = "";
+app.get("/lab1", (request, response) => {
+
+    if (status == "all")
+        DBconnection.query(sqlSelectRequest, (err, results) => {
+            if (err) console.error("Error(DB01):" + err);
+            else task = results;
+            response.render("main", {
+                task,
+                selectedStatus: ru_status(status),
+                selectedParametr: ru_paramValue(parametrValue),
+                warning: warningMess
+            });
+        });
+    else
+        DBconnection.query(sqlSelectRequestWhere, status, (err, results) => {
+            if (err) console.error("Error(DB02):" + err);
+            else task = results;
+            response.render("main", {
+                task,
+                selectedStatus: ru_status(status),
+                selectedParametr: ru_paramValue(parametrValue),
+                warning: warningMess
+            });
+        });
+});
+
+const sqlInsertRequest = "INSERT INTO tasks(taskName, completionTime) VALUES(?, ?)";
+
+const multer = require("multer");
+app.use(express.static(__dirname));
+app.use(multer({ dest: "uploads" }).single("uploadingFile"));
+
+const bodyParser = require("body-parser");
+const urlencodedParser = bodyParser.urlencoded({extended: false});
+
+app.post("/lab1", urlencodedParser, (request, response) => {
+
+    let filedata = request.file;
+    console.log(filedata);
+    console.log(request.body.taskName);
+    console.log(request.body.completionTime);
+
+
+    // let arg = [request.body.taskName,
+    // request.body.completionTime];
+
+    // let emptyFields = false;
+    // for (let i = 0; i < arg.length; i++) {
+    //     if (arg[i] == '') {
+    //         emptyFields = true;
+    //     }
+    // }
+    // // console.log(`${request.body.taskName}(${request.body.completionTime})`);
+    // if (!emptyFields) {
+    //     DBconnection.query(sqlInsertRequest, arg, (err, results) => {
+    //         if (err) console.error("Error(DB2): ", err.message);
+    //         else console.log("Data added!");
+    //         warningMess = "";
+    //     });
+    // }
+    // else warningMess = "Заполните все поля формы!";
 });
 
 app.listen(8088, () => {

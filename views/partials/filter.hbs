@@ -1,16 +1,17 @@
 <div class="filter">
 <p>Сортировать по:</p>
-    <select name="sortParam">
-        <option value="0">времени добавления</option>
-        <option value="1">названию</option>
-        <option value="2">времени завершения</option>
+    <select id="sortParam">
+        <option>{{selectedParametr}}</option>
+        {{!-- <option value="byAddTime">времени добавления</option> --}}
+        <option value="byTname">названию</option>
+        <option value="byComplTime">времени завершения</option>
     </select>
 </div>
 
 <div class="filter"> 
     <p>Отображать</p>
     <select id="status">
-        <option value=""></option>
+        <option value="">{{selectedStatus}}</option>
         <option value="all">все</option>
         <option value="done">выполненные</option>
         <option value="in process">в процессе</option>
