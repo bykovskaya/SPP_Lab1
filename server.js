@@ -106,23 +106,29 @@ function fSort(tasks, sortParam) {
 }
 
 /*generates html for tasks*/
-let color = "";
 const divDone = "<div class=\"task\" style=\"background-color:lightblue\">";
 const divInProc = "<div class=\"task\" style=\"background-color:coral\">";
 hbs.registerHelper("createTaskList", (tasks) => {
     let list = "";
     let div = "";
-    let time = new Date();
+    let link;
     fSort(tasks, parametrValue);
     for (let i = 0; i < tasks.length; i++) {
         if (tasks[i].status == "in process")
             div = divInProc;
-        else
+        else {
             div = divDone;
+
+        }
+        if (task[i].file != null) {
+            filePath = "/Lab1/uploads?uploadingFile=" + encodeURIComponent(task[i].file);            
+            link = `<a href=${filePath}>` + "file" + "</a>";
+        }
+        else link = "";
         list += div + "<h3>" + tasks[i].taskName + "</h3>" +
             "<p>" + getNormalDate(tasks[i].completionTime) + "</p>" +
             "<p>" + getNormalTime(tasks[i].completionTime) + "</p>" +
-            "</div>"
+            link + "</div>"
     }
     return new hbs.SafeString(list);
 });
@@ -135,8 +141,8 @@ app.use(express.static(path.join(__dirname + "/js")));
 let task = new Array();
 let status = "all";
 let parametrValue = "byTname";
-const sqlSelectRequestWhere = "SELECT taskName, completionTime, status FROM tasks WHERE status = ?";
-const sqlSelectRequest = "SELECT taskName, completionTime, status FROM tasks";
+const sqlSelectRequestWhere = "SELECT taskName, completionTime, file, status FROM tasks WHERE status = ?";
+const sqlSelectRequest = "SELECT taskName, completionTime, file, status FROM tasks";
 
 app.use("/sts", (request, response) => {
     status = request.query.status;
@@ -148,6 +154,14 @@ app.use("/sort", (request, response) => {
     response.redirect("/lab1");
 });
 
+app.use("/Lab1/uploads", (req, resp) => {
+    let filename = req.query.uploadingFile;
+    let fpath = __dirname + "\\uploads\\" + decodeURIComponent(filename);
+
+    console.log(fpath);
+    
+    resp.download(fpath);
+});
 
 let warningMess = "";
 app.get("/lab1", (request, response) => {
@@ -176,41 +190,59 @@ app.get("/lab1", (request, response) => {
         });
 });
 
-const sqlInsertRequest = "INSERT INTO tasks(taskName, completionTime) VALUES(?, ?)";
+const sqlInsertRequest = "INSERT INTO tasks(taskName, completionTime, file) VALUES(?, ?, ?)";
 
 const multer = require("multer");
+const storageConfig = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "uploads");
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+});
 app.use(express.static(__dirname));
-app.use(multer({ dest: "uploads" }).single("uploadingFile"));
+app.use(multer({ storage: storageConfig }).single("uploadingFile"));
 
 const bodyParser = require("body-parser");
-const urlencodedParser = bodyParser.urlencoded({extended: false});
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 app.post("/lab1", urlencodedParser, (request, response) => {
+    let filedata;
 
-    let filedata = request.file;
-    console.log(filedata);
-    console.log(request.body.taskName);
-    console.log(request.body.completionTime);
+    if (request.file) {
+        filedata = request.file;
+        //console.log(filedata.originalname);
 
+    }
+    // console.log(request.body.taskName);
+    // console.log(request.body.completionTime);
 
-    // let arg = [request.body.taskName,
-    // request.body.completionTime];
+    ///////////////////////////////////////////////////////////
+    //добавление пути к файлу в БД
+    //подгрузка файлов на страницу
+    ///////////////////////////////////////////////////////////
 
-    // let emptyFields = false;
-    // for (let i = 0; i < arg.length; i++) {
-    //     if (arg[i] == '') {
-    //         emptyFields = true;
-    //     }
-    // }
-    // // console.log(`${request.body.taskName}(${request.body.completionTime})`);
-    // if (!emptyFields) {
-    //     DBconnection.query(sqlInsertRequest, arg, (err, results) => {
-    //         if (err) console.error("Error(DB2): ", err.message);
-    //         else console.log("Data added!");
-    //         warningMess = "";
-    //     });
-    // }
-    // else warningMess = "Заполните все поля формы!";
+    let arg = [request.body.taskName,
+    request.body.completionTime];
+    if (request.file)
+        arg[2] = filedata.filename;
+
+    let emptyFields = false;
+    for (let i = 0; i < arg.length - 1; i++) {
+        if (arg[i] == '') {
+            emptyFields = true;
+        }
+    }
+    // console.log(`${request.body.taskName}(${request.body.completionTime})`);
+    if (!emptyFields) {
+        DBconnection.query(sqlInsertRequest, arg, (err, results) => {
+            if (err) console.error("Error(DB2): ", err.message);
+            else console.log("Data added!");
+            warningMess = "";
+        });
+    }
+    else warningMess = "Заполните все поля формы!";
 });
 
 app.listen(8088, () => {

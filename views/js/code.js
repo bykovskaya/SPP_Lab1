@@ -1,16 +1,27 @@
 document.getElementById("submitButton").addEventListener("click", function (e) {
-    e.preventDefault();
+    //e.preventDefault();
     // получаем данные формы
 
     let addTaskForm = document.forms["addTaskForm"];
     let taskName = addTaskForm.elements["taskName"].value;
     let completionTime = addTaskForm.elements["completionTime"].value;
     let uploadingFileName = addTaskForm.elements["uploadingFile"].value;
+    
     let form = new FormData();
     form.append("taskName", taskName);
     form.append("completionTime", completionTime);
     let val = document.getElementById("uploadingFile").files[0];
-    form.append("uploadingFile", val, uploadingFileName);
+    
+    if(val != undefined)
+        form.append("uploadingFile", val, uploadingFileName);
+    
+        let request = new XMLHttpRequest();
+        request.open("POST", "/lab1", true);
+        //request.setRequestHeader("Content-Type", "application/json");
+    
+        request.send(form);    
+   
+    
 
     // // сериализуем данные в json
     // let task = JSON.stringify({
@@ -18,12 +29,7 @@ document.getElementById("submitButton").addEventListener("click", function (e) {
     //     completionTime: completionTime
     // });
 
-    let request = new XMLHttpRequest();
-    request.open("POST", "/lab1", true);
-    //request.setRequestHeader("Content-Type", "application/json");
-
-    request.send(form);
-
+    
 });
 
 const statusSelectField = document.getElementById("status");
